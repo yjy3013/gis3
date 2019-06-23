@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>my web</title>
+  <style>
+    html,
+    body,
+	#main{
+		padding: 0;
+		margin: 0;
+		height: 100%;
+		width: 100%;
+		position:fixed;
+		left:0px;
+		top:0px;
+		
+	}
+   #viewDiv {
+    width:100%;
+	  height:100%;
+	  position:relative;
+	  float:right;
+		z-index: 25;
+	
+    }
+	
+	#viewDiv1 {
+	width:100%;
+	height:100%;
+	position:absolute;
+	float:left;
+	z-index: 50;
+	}
+	
+	#topbar {
+        background: #fff;
+        padding: 10px;
+      }
+
+      .action-button {
+        font-size: 16px;
+        background-color: transparent;
+        border: 1px solid #d3d3d3;
+        color: #6e6e6e;
+        height: 32px;
+        width: 32px;
+        text-align: center;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+      }
+
+      .action-button:hover,
+      .action-button:focus {
+        background: #0079c1;
+        color: #e4e4e4;
+      }
+
+      .active {
+        background: #0079c1;
+        color: #e4e4e4;
+      }
+	
+		
+	#add {
+	width:100px;
+	top: 80px;
+	left: 20px;
+	position: absolute;
+	z-index: 99;
+	background-color: white;
+	border-radius: 8px;
+	padding: 10px;
+	opacity: 0.75;
+	}
+	
+	#coordinate{
+	width:110px;
+	bottom: 20px;
+	left: 20px;
+	position: absolute;
+	z-index: 99;
+	background-color: white;
+	border-radius: 8px;
+	padding: 10px;
+	opacity: 0.75;
+	}
+	
+	#scale{
+	width:180px;
+	bottom: 60px;
+	left: 20px;
+	position: absolute;
+	z-index: 99;
+	background-color: white;
+	border-radius: 8px;
+	padding: 10px;
+	opacity: 0.75;
+	}
+
+  #addlayer{
+		 width:100px;
+		 top: 150px;
+		 left: 20px;
+		 position: absolute;
+		 z-index: 99;
+		 background-color: white;
+		 border-radius: 8px;
+		 padding: 10px;
+		 opacity: 0.75;
+	}
+	
+	#visi{
+		width:75px;
+		top: 150px;
+		left: 140px;
+		position: absolute;
+		z-index: 99;
+		background-color: white;
+		border-radius: 8px;
+		padding: 10px;
+		opacity: 0.75;
+	}
+	
+	#layersnumber{
+		width:80px;
+		top: 80px;
+		left: 140px;
+		position: absolute;
+		z-index: 99;
+		background-color: white;
+		border-radius: 8px;
+		padding: 10px;
+		opacity: 0.75;
+	}
+	
+	#swipe {
+            position: absolute;
+            top: 5px;
+            left: 0px；
+            z-index: 100;
+            width: 100%;
+        }
+ 
+    .swipe input[type=range] {
+        width: 300px;
+    }
+	
+  </style>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.10/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.10/"></script>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+	    "esri/core/watchUtils",
+			"esri/layers/ImageryLayer",
+			"esri/layers/TileLayer",
+			"esri/widgets/Expand",
+        "esri/widgets/BasemapGallery",
+		 "esri/widgets/DistanceMeasurement2D",
+        "esri/widgets/AreaMeasurement2D"
+    ], function(Map, MapView,watchUtils,ImageryLayer,TileLayer,Expand, BasemapGallery,DistanceMeasurement2D, AreaMeasurement2D) {
+        var activeWidget = null;
+    	var imglayer = new ImageryLayer({
+          url: "https://sampleserver6.arcgisonline.com/arcgis/rest/services/NLCDLandCover2001/ImageServer",
+          format: "jpgpng" ,// server exports in either jpg or png format
+					id:"imglyer",
+        });
+				
+			var transportationLayer = new TileLayer({
+          url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer",
+          // This property can be used to uniquely identify the layer
+          id: "street",        
+        });
+
+       var housingLayer = new TileLayer({
+          url: "https://tiles.arcgis.com/tiles/nGt4QxSblgDfeJn9/arcgis/rest/services/New_York_Housing_Density/MapServer",
+          id: "ny-housing",
+          opacity: 0.9
+        });
+			
+			
+     var oceansmap = new Map({
+        basemap: "oceans"	,
+				
+      });
+
+     var streetmap = new Map({
+	     basemap: "streets"
+	  });
+		
+     var view = new MapView({
+        container: "viewDiv1",
+        map:oceansmap,  
+			  zoom: 8,
+			  center: { 
+            x:114.30,
+            y:30.60 ,
+          },
+			 
+        });
+					
+	  	var addtheview = new MapView({
+	  		container: "viewDiv",
+	  		map:streetmap,
+	  		zoom: 8,
+	  		center: { 
+            x: 114.30,
+            y: 30.60,
+          },
+	  });
+		
+		var windowclipt = document.getElementById("winclipt");
+		windowclipt.addEventListener("change", function () {
+				if( windowclipt.checked==true)
+				{
+						var wc = document.getElementById("swipe");
+							var w = document.documentElement.clientWidth;
+							var h = document.documentElement.clientHeight;
+						document.getElementById("viewDiv1").style.clip="rect(0px "+wc.value/100*w +"px "+h+"px 0px)";	
+					
+				}
+				else{
+					var wc = document.getElementById("swipe");
+						var w = document.documentElement.clientWidth;
+						var h = document.documentElement.clientHeight;
+					document.getElementById("viewDiv1").style.clip="rect(0px "+w +"px "+h+"px 0px)";	
+
+				}
+			});
+		
+		
+		var typeselect = document.getElementById("type");
+		typeselect.addEventListener("input", function () {
+				if (streetsLayerToggle.checked==true) {				
+				view.map.basemap = type.value;		
+				}			
+			});
+	
+	  var streetsLayerToggle = document.getElementById("streetsmap");
+		streetsLayerToggle.addEventListener("change", function () {
+				if (streetsLayerToggle.checked==true) {			
+				view.map.basemap = type.value;		
+				}else{
+				view.map.basemap ="oceans" ;
+				}
+			});
+     
+		 var titlelayerToggle = document.getElementById("titlelayer");
+		 titlelayerToggle.addEventListener("change", function () {
+		 		if (titlelayerToggle.checked==true) {
+					view.goTo([114.30,30.60]).then(addm);
+           function addm(){ 
+				   view.zoom="10";
+	         view.map.add(housingLayer);
+					 var layernbs = document.getElementById("layersnumber");
+					 layernbs.textContent = "The layers number:"+view.map.layers.items.length;
+          }
+
+		 		}else{
+		 		 if(view.map.findLayerById("ny-housing"))
+				 {
+					 view.map.remove(housingLayer);
+					 var layernbs = document.getElementById("layersnumber");
+					 layernbs.textContent = "The layers number:"+view.map.layers.items.length;
+				 }
+		 		}
+				var layernbs = document.getElementById("layersnumber");
+				layernbs.textContent = "The layers number:"+view.map.layers.items.length;
+		 	});
+			
+			var imglayerToggle = document.getElementById("imglayer");
+					 imglayerToggle.addEventListener("change", function () {
+					 		if (imglayerToggle.checked==true) {
+								view.goTo([114.30,30.60]).then(add);
+			           function add(){ 
+							   view.zoom="5";
+				        view.map.add(imglayer);
+								var layernbs = document.getElementById("layersnumber");
+								layernbs.textContent = "The layers number:"+view.map.layers.items.length;
+			          }
+			
+					 		}else{
+					 		 if(view.map.findLayerById("imglyer"))
+							 {
+								 view.map.remove(imglayer);
+								 var layernbs = document.getElementById("layersnumber");
+								 layernbs.textContent = "The layers number:"+view.map.layers.items.length;
+							 }
+					 		}
+						
+					 	});
+			
+			var traToggle = document.getElementById("tranlayer");
+					traToggle.addEventListener("change", function () {
+							if (traToggle.checked==true) {
+								view.goTo([114.30,30.60]).then(add);
+								function add(){ 
+								view.zoom="10";
+								view.map.add(transportationLayer);
+								var layernbs = document.getElementById("layersnumber");
+								layernbs.textContent = "The layers number:"+view.map.layers.items.length;
+								}
+			
+							}else{
+							if(view.map.findLayerById("street"))
+							{
+								view.map.remove(transportationLayer);
+								var layernbs = document.getElementById("layersnumber");
+								layernbs.textContent = "The layers number:"+view.map.layers.items.length;
+							}
+							}
+							
+						});
+						
+		var igvisi = document.getElementById("imgvisi");
+		igvisi.addEventListener("change", function () {
+				if (igvisi.checked==true) {	
+					if(view.map.findLayerById("imglyer"))
+					{
+							view.map.findLayerById("imglyer").visible = false;					
+					}
+					else{
+						alert("请先加载图层");
+					}		
+				}
+				else{
+					if(view.map.findLayerById("imglyer"))
+					{
+							view.map.findLayerById("imglyer").visible = true;					
+					}
+				}
+			});
+   
+	 
+	 var tivisi = document.getElementById("titlevisi");
+	 tivisi.addEventListener("change", function () {
+	 			if (tivisi.checked==true) {	
+	 				if(view.map.findLayerById("ny-housing"))
+	 				{
+	 						view.map.findLayerById("ny-housing").visible = false;			
+						
+	 				}
+	 				else{
+	 					alert("请先加载图层");
+	 				}		
+	 			}
+	 			else{
+	 				if(view.map.findLayerById("ny-housing"))
+	 				{
+	 						view.map.findLayerById("ny-housing").visible = true;
+							
+	 				}
+	 			}
+	 		});
+		
+		var trvisi = document.getElementById("tranvisi");
+		trvisi.addEventListener("change", function () {
+				if (trvisi.checked==true) {	
+					if(view.map.findLayerById("street"))
+					{
+							view.map.findLayerById("street").visible = false;					
+					}
+					else{
+						alert("请先加载图层");
+					}		
+				}
+				else{
+					if(view.map.findLayerById("street"))
+					{
+							view.map.findLayerById("street").visible = true;					
+					}
+				}
+			});
+			
+			
+			var clit =document.getElementById("swipe");
+			clit.addEventListener("input",function(){
+  if( windowclipt.checked==true)
+  {
+  		var wc = document.getElementById("swipe");
+  			var w = document.documentElement.clientWidth;
+  			var h = document.documentElement.clientHeight;
+  		document.getElementById("viewDiv1").style.clip="rect(0px "+wc.value/100*w +"px "+h+"px 0px)";	
+  	
+  }
+	})			
+			
+				window.addEventListener("resize",function(){
+					if( windowclipt.checked==true)
+					{
+							var wc = document.getElementById("swipe");
+								var w = document.documentElement.clientWidth;
+								var h = document.documentElement.clientHeight;
+							document.getElementById("viewDiv1").style.clip="rect(0px "+wc.value/100*w +"px "+h+"px 0px)";	
+						
+					}
+				})			
+			
+			
+			
+	  var addlt=document.getElementById("addview");
+		
+	  addlt.addEventListener("change", function () {
+	  			if (addlt.checked==true) {			
+	  	document.getElementById("viewDiv").style.width = "50%";
+			document.getElementById("viewDiv1").style.width = "50%";
+			document.getElementById("viewDiv1").style.position = "relative";
+	  	
+			
+				if( windowclipt.checked==true)
+				{
+						var wc = document.getElementById("swipe");
+							var w = document.documentElement.clientWidth;
+							var h = document.documentElement.clientHeight;
+						document.getElementById("viewDiv1").style.clip="rect(0px "+wc.value/100*w +"px "+h+"px 0px)";	
+					
+				}
+				}else
+	  {
+	  	document.getElementById("viewDiv").style.width = "100%";
+	  	document.getElementById("viewDiv1").style.width = "100%";
+			document.getElementById("viewDiv1").style.position = "absolute";
+			if( windowclipt.checked==true)
+			{
+					var wc = document.getElementById("swipe");
+						var w = document.documentElement.clientWidth;
+						var h = document.documentElement.clientHeight;
+					document.getElementById("viewDiv1").style.clip="rect(0px "+wc.value/100*w +"px "+h+"px 0px)";			
+			}
+			
+			
+	  }
+	  });
+		
+ 	  view.on("click",function(ev) { 
+ 		  var zubiao=ev.mapPoint.longitude.toFixed(3)+","+ev.mapPoint.latitude.toFixed(3);
+ 		  alert(zubiao) ;
+       });
+			 
+	  
+	   addtheview.on('pointer-move', function(evt){
+			 dqlzuishua.style.opacity = "0.75";
+	   var point=addtheview.toMap({x:evt.x,y:evt.y});
+	   dqlzuishua.textContent=point.longitude.toFixed(3)+","+point.latitude.toFixed(3);
+		 scale.textContent = "scale: 1:"+view.scale.toFixed(3);
+     });
+
+     addtheview.on("click",function(ev) { 
+ 		  var zubiao=ev.mapPoint.longitude.toFixed(3)+","+ev.mapPoint.latitude.toFixed(3);
+ 		  alert(zubiao) ;
+       });
+			 
+	   var dqlzuishua= document.getElementById("coordinate");
+		 var scale= document.getElementById("scale");
+		 
+	   view.on('pointer-move', function(evt){
+	   var point=view.toMap({x:evt.x,y:evt.y});
+	   dqlzuishua.textContent=point.longitude.toFixed(3)+","+point.latitude.toFixed(3);
+		 scale.textContent = "scale: 1:"+view.scale.toFixed(3);
+     }); 
+ 
+		 
+		 watchUtils.whenTrue(view, "stationary", function() {
+	   if (view.extent) { 	 
+			 addtheview.extent = view.extent;
+				} 
+	   });
+    
+		view.on("drag",function(ev) { 
+		if (view.extent) {  			 
+		 			 addtheview.extent = view.extent; 			 
+									 } 
+			});
+			
+			
+		addtheview.on("drag",function(ev) { 
+		if (addtheview.extent) {  			 
+					view.extent = addtheview.extent; 			 
+									} 
+			});
+			
+			
+
+				
+		watchUtils.whenTrue(addtheview, "stationary", function() {
+			
+				if (addtheview.extent) { 
+					view.extent = addtheview.extent;
+					} 
+					
+				});
+			
+			watchUtils.whenTrue(view, "stationary", function() {
+			
+					if (view.extent) { 
+						addtheview.extent = view.extent;
+						} 
+						
+					});
+					var basemapGallery = new BasemapGallery({
+          view: view,
+          container: document.createElement("div")
+        });
+
+        
+
+        var bgExpand = new Expand({
+          view: view,
+          content: basemapGallery
+        });
+
+        
+        basemapGallery.watch("activeBasemap", function() {
+          var mobileSize =
+            view.heightBreakpoint === "xsmall" ||
+            view.widthBreakpoint === "xsmall";
+
+          if (mobileSize) {
+            bgExpand.collapse();
+          }
+        });
+
+
+        view.ui.add(bgExpand, "top-right");
+		 view.ui.add("topbar", "top-right");
+
+        document
+          .getElementById("distanceButton")
+          .addEventListener("click", function() {
+            setActiveWidget(null);
+            if (!this.classList.contains("active")) {
+              setActiveWidget("distance");
+            } else {
+              setActiveButton(null);
+            }
+          });
+
+        document
+          .getElementById("areaButton")
+          .addEventListener("click", function() {
+            setActiveWidget(null);
+            if (!this.classList.contains("active")) {
+              setActiveWidget("area");
+            } else {
+              setActiveButton(null);
+            }
+          });
+
+        function setActiveWidget(type) {
+          switch (type) {
+            case "distance":
+              activeWidget = new DistanceMeasurement2D({
+                view: view
+              });
+
+            
+              activeWidget.viewModel.newMeasurement();
+
+              view.ui.add(activeWidget, "top-right");
+              setActiveButton(document.getElementById("distanceButton"));
+              break;
+            case "area":
+              activeWidget = new AreaMeasurement2D({
+                view: view
+              });
+
+       
+              activeWidget.viewModel.newMeasurement();
+
+              view.ui.add(activeWidget, "top-right");
+              setActiveButton(document.getElementById("areaButton"));
+              break;
+            case null:
+              if (activeWidget) {
+                view.ui.remove(activeWidget);
+                activeWidget.destroy();
+                activeWidget = null;
+              }
+              break;
+          }
+        }
+
+        function setActiveButton(selectedButton) {
+         
+          view.focus();
+          var elements = document.getElementsByClassName("active");
+          for (var i = 0; i < elements.length; i++) {
+            elements[i].classList.remove("active");
+          }
+          if (selectedButton) {
+            selectedButton.classList.add("active");
+          }
+        }
+			});
+		
+		
+  </script>
+</head>
+
+<body>
+	
+ <div id="main">
+	
+	 <div id="viewDiv1">
+	</div>
+ 	<div id="viewDiv"></div>
+ </div>
+  <div id="layersnumber">The layers number:0</div>
+  <div id="topbar">
+      <button
+        class="action-button esri-icon-minus"
+        id="distanceButton"
+        type="button"
+        title="Measure distance between two or more points"
+      ></button>
+      <button
+        class="action-button esri-icon-polygon"
+        id="areaButton"
+        type="button"
+        title="Measure area"
+      ></button>
+    </div>
+  <span id="add"> 	
+  <input type="checkbox" id="addview"> 联动视窗
+	<input type="checkbox" id="winclipt"> 卷帘
+	</span>  
+  <span id="addlayer"> 
+  <input type="checkbox" id="imglayer">img图层
+	<input type="checkbox" id="titlelayer">title图层
+	<input type="checkbox" id="tranlayer">路网图层
+	</span>
+  <span id="visi">
+  	<input type="checkbox" id="imgvisi">隐藏
+  	<input type="checkbox" id="titlevisi">隐藏
+		<input type="checkbox" id="tranvisi">隐藏	
+  </span>
+	<div id="coordinate" >0,0</div>
+	<div id="scale" >scale: 1:0</div>
+	
+	<div class="swipe">
+	<input type="range" min="0" max="100" step="1" id="swipe" value="8"><br />       
+	</div>
+<span id="Toggle">
+			<input type="checkbox" id="streetsmap">
+			<select name="maptype" id="type">
+			</select>
+		</span>	
+</body>
+</html>
