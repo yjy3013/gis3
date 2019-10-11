@@ -1,0 +1,182 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ArcGIS JavaScript Tutorials: Create a Starter App</title>
+  <style>
+    html, body, #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+	#layerToggle {
+				top: 80px;
+				right: 20px;
+				position: absolute;
+				z-index: 99;
+				background-color: white;
+				border-radius: 8px;
+				padding: 10px;
+				opacity: 0.75;
+			}
+  </style>
+  
+  <link rel="stylesheet" href="https://js.arcgis.com/4.12/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.12/"></script>
+  
+  <script>  
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/CSVLayer",
+      "esri/layers/GeoJSONLayer",
+	  "esri/layers/FeatureLayer",
+	  "esri/widgets/BasemapToggle"
+    ], function(Map, MapView,CSVLayer,GeoJSONLayer,FeatureLayer) {
+
+      var basemaps = [
+		"streets",
+		"hybrid",
+		"topo"
+	];
+	var map = new Map({
+		basemap:basemaps[0]
+	});
+
+      var view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [114.31676,30.7],
+        zoom: 9
+      });
+	  
+	   document.querySelector(".btns").addEventListener("click", function(event) {
+        	var id = event.target.getAttribute("value");
+        	if(id){
+        		view.map.basemap = basemaps[id]
+        	}
+        });
+	  
+    var trailheadsRenderer = {
+          type: "simple",
+          symbol: {
+            type: "picture-marker",
+			url: "https://yjy3013.github.io/gis3/tubiao.jpg",
+            width: "12px",
+            height: "12px",
+			
+          }
+        };
+		
+		var popupTrailheads = {
+        "title": "{name}",
+        "content": "<b>介绍:</b> {jieshao}<br><b>City:</b> {city}<br><b>校歌:</b> {xiaoge}<br><b>校训:</b> {xiaoxun}<b>dress:</b> {dress} "
+      };
+	  
+	  var hrenderer = {
+					type: "heatmap",
+					colorStops: [{
+							color: "rgba(0, 128, 225, 0)",
+							ratio: 0
+						},
+						{
+							color: "rgba(92, 174, 162, 1)",
+							ratio: 0.2
+						},
+						{
+							color: "rgba(255, 255,0 ,1 )",
+							ratio: 0.4
+						},
+						{
+							color: "rgba(255, 128, 0, 1)",
+							ratio: 0.8
+						},
+						{
+							color: "rgba(255, 0, 0, 1)",
+							ratio: 1
+						}
+					],
+					maxPixelIntensity: 100,
+					minPixelIntensity: 0
+				};
+	  
+
+        var geoJSONLayer = new GeoJSONLayer({
+          url: "https://yjy3013.github.io/gis3/wuhan.json"
+        });
+        map.add(geoJSONLayer);
+        var trailheadsLayer = new CSVLayer({
+          url: "https://yjy3013.github.io/gis3/daxue.csv",
+		  outFields:["jieshao","city","xiaoge","xiaoxun","dress"],
+		  popupTemplate: popupTrailheads,
+          renderer: trailheadsRenderer,
+		  
+        });
+		
+		var trailheads = new CSVLayer({
+					url: "https://yjy3013.github.io/gis3/daxue.csv",
+					renderer: hrenderer
+				});
+
+       
+		
+		var coordsWidget = document.createElement("div");
+      coordsWidget.id = "coordsWidget";
+      coordsWidget.className = "esri-widget esri-component";
+      coordsWidget.style.padding = "7px 15px 5px";
+
+      view.ui.add(coordsWidget, "bottom-right");
+	  function showCoordinates(pt) {
+        var coords = "Lat/Lon " + pt.latitude.toFixed(3) + " " + pt.longitude.toFixed(3) +
+            " | Scale 1:" + Math.round(view.scale * 1) / 1 +
+            " | Zoom " + view.zoom;
+        coordsWidget.innerHTML = coords;
+      }
+		view.watch("stationary", function(isStationary) {
+        showCoordinates(view.center);
+      });
+
+      view.on("pointer-move", function(evt) {
+        showCoordinates(view.toMap({ x: evt.x, y: evt.y }));
+      });
+	  
+	var streetsLayerToggle = document.getElementById("csvLayer");				
+	streetsLayerToggle.addEventListener("change", function() {
+	
+		trailheadsLayer.visible = streetsLayerToggle.checked;
+		if(streetsLayerToggle.checked == true){
+	map.add(trailheadsLayer);}else;
+	});
+	
+	
+	
+	var streetsLayerToggle1 = document.getElementById("reli");				
+	streetsLayerToggle1.addEventListener("change", function() {
+		trailheads.visible = streetsLayerToggle1.checked;
+		if(streetsLayerToggle1.checked == true){
+	map.add(trailheads);}else;
+	});
+	
+	
+	
+	
+	});
+	  
+		
+       
+  </script>
+</head>
+<body>
+  <div id="viewDiv"></div>
+  <div class="btns" style="position: fixed ! important; left: 5px; top: 100px;">
+  		<input type="radio" name="ra" value="0"/> streets
+		<input type="radio" name="ra" value="1"/> hybrid		
+    	<input type="radio" name="ra" value="2"/> topo 
+    	</div>
+  <span id="layerToggle">
+	    	<input type="checkbox" id="csvLayer" > 学校<br />
+			<input type="checkbox" id="reli" > 热力图
+        </span>
+</body>
+</html>
